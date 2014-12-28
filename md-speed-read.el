@@ -1,3 +1,4 @@
+
 (define-derived-mode speed-read-mode special-mode "SR"
   "mode for the *Speed Read* buffer in which the text is displayed word by word.
 \\{speed-read-mode-map}"
@@ -6,28 +7,17 @@
     (setq cursor-type nil)              ;hide cursor
     (hl-line-mode 0)                    ;do not highlight current line
     (show-paren-mode nil)               ;do not color unmatched parenthesis
-    (setq buffer-read-only nil)
+    (setq rainbow-delimiters-mode 0)
+    (setq buffer-read-only nil)         ;possibility to insert text into buffer
 
-    (defconst md-words-per-minute 250
+    (defconst md-words-per-minute 300
       "word per minute for speed reading")
 
-    (defface md-speed-read-face-default nil
-      "face of the words displayed one by one")
-    
-    (defface md-speed-read-face-focus nil
-      "face of the character focused in the middle")
+    (defface md-speed-read-face-focus
+    '((t (:foreground "salmon")))
+    "face of the character focused in the middle")
 
-    (define-key speed-read-mode-map (kbd "SPC") 'md-pause-speed-read)
     )
-  )
-
-(defconst md-speed-read-continue t
-  "variable to pause (nil) and continue (t) md-speed-read-region")
-
-(defun md-pause-speed-read ()
-  "pause md-speed-read-region with toggleling the constant md-speed-read-continue"
-  (interactive)
-  (setq md-speed-read-continue (if (equal md-speed-read-continue nil) t nil))
   )
 
 (defun md-speed-read-region (p1 p2)
@@ -42,17 +32,28 @@
       (speed-read-mode)
       (delete-region (point-min) (point-max))
       (dolist (word wordlist)
+        ;; set position
         (setq wordlength (length word))
-        (insert (make-string 8 ? ) "ᐁ")
-        (insert "\n" (make-string (- 9 (/ wordlength 2)) ? ) word)
-        (insert "\n" (make-string 8 ? ) "ᐃ")
-        (set-text-properties (+ (search-backward word) (/ wordlength 2) -1) (+ (point) (/ wordlength 2)) '(face sh-quoted-exec))
-        (if md-speed-read-continue
-            (sit-for (/ 60.0 md-words-per-minute))
-          (sit-for 100)
+        (setq leading-whitespaces (- 9 (/ wordlength 2)))
+        (if (< leading-whitespaces 0)
+            (setq leading-whitespaces 1)
           )
+        ;; insert stuff in buffer
+        (insert (make-string 8 ? ) "ᐁ")
+        (insert "\n" (make-string leading-whitespaces ? ) word)
+        (insert "\n" (make-string 8 ? ) "ᐃ")
+        ;; color middle character
+        (put-text-property
+         (+ (search-backward word) (/ wordlength 2) -1)
+         (+ (point) (/ wordlength 2))
+         'face 'md-speed-read-face-focus
+         )
+        ;; wait between words
+        (sit-for (/ 60.0 md-words-per-minute))
+        ;; clear buffer
         (delete-region (point-min) (point-max))
         )
+      ;; display time
       (insert (format "Read %s words in %.2f seconds" (length wordlist) (* (length wordlist) (/ 60.0 md-words-per-minute))))
       (sit-for 2)
       )
@@ -88,5 +89,11 @@
   (switch-to-buffer-other-window gnus-article-buffer)
   (md-speed-read-email)
   )
+
+;; set keybindings
+(global-set-key (kbd "M-s r") 'md-speed-read-region)
+(global-set-key (kbd "M-s b") 'md-speed-read-buffer)
+(global-set-key (kbd "M-s p") 'md-speed-read-from-point)
+(global-set-key (kbd "M-s a") 'md-speed-read-article)
 
 (provide 'md-speed-read)
