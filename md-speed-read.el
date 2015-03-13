@@ -10,7 +10,7 @@
     (setq rainbow-delimiters-mode 0)
     (setq buffer-read-only nil)         ;possibility to insert text into buffer
 
-    (defconst md-words-per-minute 300
+    (defconst md-words-per-minute 350
       "word per minute for speed reading")
 
     (defface md-speed-read-face-focus
@@ -80,7 +80,7 @@
 (defun md-speed-read-from-point ()
   "function that starts md-spead-read-region from point"
   (interactive)
-  (md-spead-read-region (point) (point-max))
+  (md-speed-read-region (point) (point-max))
   )
 
 (defun md-speed-read-article ()
